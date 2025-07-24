@@ -1,0 +1,14 @@
+# ClickUp Field Mapping for leadgen_processor.py
+# Generated on 2025-07-23 13:01:38.946325
+
+self.clickup_field_mapping = {
+    'company': '0945b0ab-20e6-4f19-9667-a0d11ab32f0e',
+    'email': 'b07a69f3-1ba6-4520-bb5a-f513b573fb2e',
+    'phone': '6eff29cc-d7b8-4517-8d4e-ff0ba486973a',
+    'estimated_value': '25945e8b-0126-405d-95eb-d0d8ca09bbb3',
+    'last_contact': 'a5be2a78-bd38-4393-a193-41648af324b8',
+    'opportunity_stage': 'f803fb30-8709-4294-9421-22546ccd219f',
+    'opportunity_type': '46389a05-2371-434a-9dba-82e152e2e53b'
+}
+
+# Your List ID: 901316698136

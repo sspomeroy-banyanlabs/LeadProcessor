@@ -1,0 +1,24 @@
+# Core HTTP requests and parsing
+requests
+beautifulsoup4
+
+# Optional async requests
+httpx
+
+# Data wrangling
+pandas
+
+# For reading environment variables like API keys
+python-dotenv
+
+# Optional: schedule recurring tasks (for CLI or scripts)
+schedule
+
+# Optional: structured data validation
+pydantic
+
+# Logging and debug output
+loguru
+PyJWT==2.10.1
+openpyxl==3.1.5
+python-dotenv==1.1.1

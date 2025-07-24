@@ -1,0 +1,13 @@
+# Ignore secrets and environments
+.env
+.venv/
+__pycache__/
+
+# Ignore logs and output
+logs/
+*.log
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
