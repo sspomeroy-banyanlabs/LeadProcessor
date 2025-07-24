@@ -53,17 +53,17 @@ class LeadGenProcessor:
         """Clean and standardize phone numbers for ClickUp - format: +1 XXX XXX XXXX"""
         if pd.isna(phone) or not phone:
             return None
-        
+            
         # Remove all non-digit characters
         cleaned = re.sub(r'[^\d]', '', str(phone))
-    
+        
         # Format exactly like Emily Cox: +1 XXX XXX XXXX
         if len(cleaned) == 10:
             return f"+1 {cleaned[:3]} {cleaned[3:6]} {cleaned[6:]}"
         elif len(cleaned) == 11 and cleaned[0] == '1':
             clean_10 = cleaned[1:]
             return f"+1 {clean_10[:3]} {clean_10[3:6]} {clean_10[6:]}"
-    
+        
         return None
 
     def clean_email(self, email: str) -> Optional[str]:
@@ -348,7 +348,7 @@ class LeadGenProcessor:
                 "value": str(lead['email'])
             })
         
-        # Phone field - with correct (XXX) XXX-XXXX format
+        # Phone field - with correct +1 XXX XXX XXXX format
         if lead.get('phone'):
             custom_fields.append({
                 "id": self.clickup_field_mapping['phone'],
@@ -380,7 +380,10 @@ class LeadGenProcessor:
 
     def upload_to_clickup(self, df: pd.DataFrame, list_id: str, batch_size: int = 5) -> List[str]:
         """Upload leads to ClickUp in batches"""
-       # df = df.head(3)       
+        
+        # TEST MODE: Only upload first 3 leads
+        df = df.head(3)
+        
         logger.info(f"Uploading {len(df)} leads to ClickUp list {list_id}")
         
         task_ids = []
@@ -416,7 +419,7 @@ class LeadGenProcessor:
         logger.info(f"🎉 Successfully created {len(task_ids)} tasks")
         return task_ids
 
-    def process_all_csvs(self, csv_dir: str = ".", output_file: str = 'processed_leads.csv') -> pd.DataFrame:
+    def process_all_csvs(self, csv_dir: str = "data/csv_raw", output_file: str = 'processed_leads.csv') -> pd.DataFrame:
         """Process all CSV files in directory and combine them"""
         logger.info(f"Processing all CSVs in directory: {csv_dir}")
         
@@ -466,7 +469,7 @@ class LeadGenProcessor:
         validated_df = self.validate_leads(deduped_df)
         
         # Save processed leads
-        output_path = csv_dir / output_file
+        output_path = csv_dir.parent / output_file
         validated_df.to_csv(output_path, index=False)
         logger.info(f"💾 Saved {len(validated_df)} processed leads to {output_path}")
         
@@ -489,8 +492,8 @@ def main():
     
     print(f"✅ ClickUp token loaded: {processor.clickup_token[:10]}...")
     
-    # Process all CSVs in current directory
-    processed_leads = processor.process_all_csvs()
+    # Process all CSVs in data/csv_raw directory
+    processed_leads = processor.process_all_csvs("data/csv_raw")
     
     if len(processed_leads) == 0:
         print("❌ No leads were processed. Check your CSV files and logs.")
