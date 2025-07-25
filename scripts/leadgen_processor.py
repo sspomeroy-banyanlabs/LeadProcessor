@@ -627,7 +627,7 @@ def main():
     print(f"\n💾 Processed data saved to: processed_leads.csv")
     
     # UPLOAD TO CLICKUP - CONFIGURED FOR YOUR SANDBOX
-    list_id = "901315917676"
+    list_id = os.getenv("CLICKUP_LIST_ID", "901315917676")  # Production Banyan CRM
     print(f"\n🚀 Uploading to ClickUp list: {list_id}")
     task_ids = processor.upload_to_clickup(processed_leads, list_id)
     print(f"✅ Created {len(task_ids)} tasks in ClickUp!")

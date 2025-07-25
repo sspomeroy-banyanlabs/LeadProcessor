@@ -28,6 +28,7 @@ pip install -r requirements.txt
 1. **Set up ClickUp API token** in `.env`:
 ```
 CLICKUP_TOKEN=pk_your_token_here
+CLICKUP_LIST_ID=your_clickup_list_id
 ```
 
 2. **Configure ClickUp field mappings** in `scripts/leadgen_processor.py`:
