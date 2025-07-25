@@ -494,7 +494,7 @@ class LeadGenProcessor:
         """Upload leads to ClickUp in batches"""
         
         # TEST MODE: Only upload first 3 leads
-        df = df.head(3)
+       # df = df.head(3)
         
         logger.info(f"Uploading {len(df)} leads to ClickUp list {list_id}")
         
@@ -627,7 +627,7 @@ def main():
     print(f"\n💾 Processed data saved to: processed_leads.csv")
     
     # UPLOAD TO CLICKUP - CONFIGURED FOR YOUR SANDBOX
-    list_id = "901316698136"
+    list_id = "901315917676"
     print(f"\n🚀 Uploading to ClickUp list: {list_id}")
     task_ids = processor.upload_to_clickup(processed_leads, list_id)
     print(f"✅ Created {len(task_ids)} tasks in ClickUp!")
