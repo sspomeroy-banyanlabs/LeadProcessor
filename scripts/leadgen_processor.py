@@ -212,56 +212,168 @@ class LeadGenProcessor:
         """Process any other CSV file by trying to map common column names"""
         logger.info(f"Processing generic CSV: {file_path}")
         
-        df = pd.read_csv(file_path)
-        columns_lower = [col.lower() for col in df.columns]
-        
-        # Try to find common patterns
-        name_col = None
-        first_name_col = None
-        last_name_col = None
-        email_col = None
-        phone_col = None
-        company_col = None
-        title_col = None
-        
-        for i, col in enumerate(df.columns):
-            col_lower = col.lower()
+        try:
+            # First, try reading normally
+            df = pd.read_csv(file_path)
             
-            if 'full name' in col_lower or col_lower == 'name':
-                name_col = col
-            elif 'first name' in col_lower:
-                first_name_col = col
-            elif 'last name' in col_lower:
-                last_name_col = col
-            elif 'email' in col_lower:
-                email_col = col
-            elif 'phone' in col_lower:
-                phone_col = col
-            elif 'company' in col_lower:
-                company_col = col
-            elif 'title' in col_lower:
-                title_col = col
-        
-        processed = pd.DataFrame({
-            'name': df[name_col] if name_col else None,
-            'first_name': df[first_name_col] if first_name_col else None,
-            'last_name': df[last_name_col] if last_name_col else None,
-            'title': df[title_col] if title_col else None,
-            'company': df[company_col].apply(self.standardize_company_name) if company_col else None,
-            'email': df[email_col].apply(self.clean_email) if email_col else None,
-            'phone': df[phone_col].apply(self.clean_phone_number) if phone_col else None,
-            'source': f'Generic CSV: {Path(file_path).name}',
-            'estimated_value': 5000
-        })
-        
-        # Create name if missing
-        if name_col is None and first_name_col and last_name_col:
-            processed['name'] = (
-                processed['first_name'].astype(str) + ' ' + 
-                processed['last_name'].astype(str)
-            ).str.strip()
-        
-        return processed
+            # Check if this looks like a headerless file (first column contains names)
+            first_col_sample = str(df.columns[1]) if len(df.columns) > 1 else str(df.columns[0])
+            
+            # Detect if the "headers" are actually data (names like Tara, Ron, Julian)
+            headerless_indicators = [
+                'tara hanley', 'ron williams', 'julian drew',  # Specific names we saw
+                any(len(col.split()) == 2 and col.replace(' ', '').isalpha() for col in df.columns[:5])  # Two-word alpha strings
+            ]
+            
+            if any(headerless_indicators) or any(name in first_col_sample.lower() for name in ['tara', 'ron', 'julian']):
+                logger.info(f"Detected headerless CSV, re-reading with proper structure")
+                # Re-read without headers and assign positional column names based on typical structure
+                df = pd.read_csv(file_path, header=None)
+                
+                # Based on the patterns we saw, map columns positionally
+                if len(df.columns) >= 10:
+                    # Standard structure: timestamp, name, first, last, title, company, website, list, linkedin, email
+                    df.columns = ['timestamp', 'full_name', 'first_name', 'last_name', 'title', 'company', 'website', 'list', 'linkedin', 'email'] + \
+                                [f'col_{i}' for i in range(10, len(df.columns))]
+                else:
+                    df.columns = [f'col_{i}' for i in range(len(df.columns))]
+                    
+                # Override column detection for headerless files
+                name_col = 'full_name' if 'full_name' in df.columns else df.columns[1] if len(df.columns) > 1 else None
+                first_name_col = 'first_name' if 'first_name' in df.columns else df.columns[2] if len(df.columns) > 2 else None
+                last_name_col = 'last_name' if 'last_name' in df.columns else df.columns[3] if len(df.columns) > 3 else None
+                title_col = 'title' if 'title' in df.columns else df.columns[4] if len(df.columns) > 4 else None
+                company_col = 'company' if 'company' in df.columns else df.columns[5] if len(df.columns) > 5 else None
+                email_col = 'email' if 'email' in df.columns else df.columns[9] if len(df.columns) > 9 else None
+                phone_col = None  # Usually not in a predictable position in these files
+                
+            else:
+                # Normal CSV with headers - use original logic
+                if df.empty:
+                    logger.warning(f"CSV file {file_path} is empty")
+                    return pd.DataFrame()
+                
+                # Debug: Print column names to help troubleshoot
+                logger.info(f"Columns found: {list(df.columns)}")
+                
+                # Try to find common patterns - more flexible matching
+                name_col = None
+                first_name_col = None
+                last_name_col = None
+                email_col = None
+                phone_col = None
+                company_col = None
+                title_col = None
+                
+                for col in df.columns:
+                    col_lower = col.lower().strip()
+                    
+                    # Name field variations
+                    if any(x in col_lower for x in ['contact full name', 'full name', 'name']):
+                        if not name_col:  # Take first match
+                            name_col = col
+                    elif any(x in col_lower for x in ['first name', 'firstname', 'fname']):
+                        if not first_name_col:
+                            first_name_col = col
+                    elif any(x in col_lower for x in ['last name', 'lastname', 'lname', 'surname']):
+                        if not last_name_col:
+                            last_name_col = col
+                    
+                    # Email field variations
+                    elif any(x in col_lower for x in ['email', 'e-mail', 'mail']):
+                        if not email_col:
+                            email_col = col
+                    
+                    # Phone field variations
+                    elif any(x in col_lower for x in ['phone', 'telephone', 'tel', 'mobile', 'cell']):
+                        if not phone_col:
+                            phone_col = col
+                    
+                    # Company field variations
+                    elif any(x in col_lower for x in ['company', 'organization', 'org', 'business', 'firm']):
+                        if not company_col:
+                            company_col = col
+                    
+                    # Title field variations
+                    elif any(x in col_lower for x in ['title', 'position', 'role', 'job']):
+                        if not title_col:
+                            title_col = col
+                
+            # Log what we found
+            logger.info(f"Mapped fields - Name: {name_col}, First: {first_name_col}, Last: {last_name_col}, Email: {email_col}, Phone: {phone_col}, Company: {company_col}, Title: {title_col}")
+            
+            # Build the processed DataFrame with safer column access
+            processed_data = {}
+            
+            # Handle name fields
+            if name_col and name_col in df.columns:
+                processed_data['name'] = df[name_col]
+            else:
+                processed_data['name'] = None
+                
+            if first_name_col and first_name_col in df.columns:
+                processed_data['first_name'] = df[first_name_col]
+            else:
+                processed_data['first_name'] = None
+                
+            if last_name_col and last_name_col in df.columns:
+                processed_data['last_name'] = df[last_name_col]
+            else:
+                processed_data['last_name'] = None
+                
+            if title_col and title_col in df.columns:
+                processed_data['title'] = df[title_col]
+            else:
+                processed_data['title'] = None
+                
+            if company_col and company_col in df.columns:
+                processed_data['company'] = df[company_col].apply(self.standardize_company_name)
+            else:
+                processed_data['company'] = None
+                
+            if email_col and email_col in df.columns:
+                processed_data['email'] = df[email_col].apply(self.clean_email)
+            else:
+                processed_data['email'] = None
+                
+            if phone_col and phone_col in df.columns:
+                processed_data['phone'] = df[phone_col].apply(self.clean_phone_number)
+            else:
+                processed_data['phone'] = None
+            
+            # Add source and estimated value
+            processed_data['source'] = f'Generic CSV: {Path(file_path).name}'
+            processed_data['estimated_value'] = 5000
+            
+            # Create DataFrame with explicit index
+            processed = pd.DataFrame(processed_data, index=range(len(df)))
+            
+            # Create name if missing but we have first/last
+            if (not processed['name'].notna().any()) and first_name_col and last_name_col:
+                processed['name'] = (
+                    processed['first_name'].astype(str) + ' ' + 
+                    processed['last_name'].astype(str)
+                ).str.strip()
+                # Clean up "nan nan" entries
+                processed['name'] = processed['name'].replace('nan nan', None)
+            
+            logger.info(f"Successfully processed {len(processed)} leads from generic CSV")
+            return processed
+            
+        except Exception as e:
+            logger.error(f"Error processing {file_path}: {str(e)}")
+            # Return empty DataFrame with correct structure
+            return pd.DataFrame({
+                'name': [],
+                'first_name': [],
+                'last_name': [],
+                'title': [],
+                'company': [],
+                'email': [],
+                'phone': [],
+                'source': [],
+                'estimated_value': []
+            })
 
     def deduplicate_leads(self, df: pd.DataFrame) -> pd.DataFrame:
         """Remove duplicate leads based on email and company"""
@@ -440,7 +552,7 @@ class LeadGenProcessor:
             file_name = csv_file.name.lower()
             
             try:
-                if 'arizona' in file_name:
+                if 'arizona' in file_name and ('commercial' in file_name or 'restaurant' in file_name):
                     df = self.process_arizona_csv(str(csv_file))
                 elif 'george' in file_name or 'cto' in file_name:
                     df = self.process_george_cto_csv(str(csv_file))
@@ -450,8 +562,11 @@ class LeadGenProcessor:
                     logger.info(f"🔍 Processing as generic CSV: {csv_file}")
                     df = self.process_generic_csv(str(csv_file))
                 
-                all_leads.append(df)
-                logger.info(f"✅ Processed {len(df)} leads from {csv_file.name}")
+                if not df.empty:
+                    all_leads.append(df)
+                    logger.info(f"✅ Processed {len(df)} leads from {csv_file.name}")
+                else:
+                    logger.warning(f"⚠️ No valid leads found in {csv_file.name}")
                 
             except Exception as e:
                 logger.error(f"❌ Error processing {csv_file}: {str(e)}")
