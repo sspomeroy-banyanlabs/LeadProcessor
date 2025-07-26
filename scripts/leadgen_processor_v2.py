@@ -1,9 +1,27 @@
 #!/usr/bin/env python3
+#v2 working with industry sorting
+#!/usr/bin/env python3
+#v2 working with industry sorting
 """
-LeadGen CSV to ClickUp Processor
-Cleans and standardizes lead data from multiple CSV sources for ClickUp import
-Enhanced with automatic industry detection based on source
+LeadGen CSV to ClickUp Processor - LeadGen Sample CRM Version
+============================================================
+
+This processor is specifically configured for the LeadGen Sample CRM environment.
+It automatically imports CSV lead data into ClickUp with intelligent data cleaning,
+industry auto-detection, and proper field mapping.
+
+Features:
+- Smart CSV parsing (handles headerless files and multiple formats)
+- Automatic industry classification based on source data
+- Data cleaning (phone formatting, email validation, company standardization)  
+- Deduplication and quality validation
+- Optimized for LeadGen Sample CRM field mappings and UUIDs
+
+Environment: LeadGen Sample CRM (XXXXXXXX8136)
+Last Updated: July 2025
+Status: Production-ready for Sample CRM environment
 """
+
 
 import pandas as pd
 import requests
@@ -32,21 +50,8 @@ class LeadGenProcessor:
             'Content-Type': 'application/json'
         }
         
-        # Industry dropdown option UUIDs - BANYAN CRM (Production)
-        self.banyan_industry_uuids = {
-            'Real Estate': '49948abe-7bfe-4c28-a3a6-e4cd44b31fbf',
-            'Technology': '5cd90d82-5807-470a-88c9-78c0ebf76283', 
-            'Food & Beverage': 'f6d00d4c-0e88-46b5-a39f-60ccc9412ba5',
-            'Healthcare/Dental': '0a455ced-8153-4fcc-b5b6-a6df5281a73f',
-            'Non-Profit': '39289333-cf75-4dbb-b1a1-25e8c8b5b6ef',
-            'Home Services': 'af306f65-b217-440c-b89c-2efea60e3a09',
-            'Entrepreneurship': '40a69ef1-bb05-4efe-a687-b99f8ab45fcc',
-            'Marketing/Design': 'fd29c12b-a143-4c05-b1cf-dd13608311f6',
-            'General Business': 'b49cc787-79bd-48ff-bbbb-5a6ae32eb388'
-        }
-        
         # Industry dropdown option UUIDs - LEADGEN SAMPLE CRM (Testing)
-        self.sample_industry_uuids = {
+        self.industry_uuids = {
             'Real Estate': '2a41e944-36ad-4ee2-90e5-5b4d5248958e',
             'Technology': '8ad8c8b7-17b1-41fc-987c-946fd8444373',
             'Food & Beverage': '40d93476-3c7d-4db8-abc3-7df5d25c1167',
@@ -58,19 +63,8 @@ class LeadGenProcessor:
             'General Business': '49c21b2f-458d-4ff8-a456-72602d5b4033'
         }
         
-        # Field mappings for different environments
-        self.banyan_field_mapping = {
-            'company': 'bdc162a2-ea62-4074-b24c-e019e48cbbe5',  # Correct Banyan CRM Company field
-            'email': '5c20bfab-6fb9-452f-9196-14996b653515',     # Correct Banyan CRM Email field  
-            'phone': '68b89889-25a0-445c-a461-fd42c4bb7e64',     # Correct Banyan CRM Phone field
-            'estimated_value': '9e36e6a4-37b3-4251-9604-4cf714585f2d',  # Correct Banyan CRM Estimated Value
-            'last_contact': '920206a7-4511-4c2c-a4f1-e548a232cc9f',     # Correct Banyan CRM Last Contact
-            'opportunity_stage': '03722cf5-f4fe-4811-83a7-01b73b5d8628', # Correct Banyan CRM Opportunity Stage
-            'opportunity_type': 'a0c40b59-7195-4788-8545-08ed24ad60d7',  # Correct Banyan CRM Opportunity Type
-            'industry': 'a76893ac-c9d4-4886-a9e2-d850bbd7d151'  # Banyan CRM Industry field
-        }
-        
-        self.sample_field_mapping = {
+        # Field mapping
+        self.field_mapping = {
             'company': '0945b0ab-20e6-4f19-9667-a0d11ab32f0e',
             'email': 'b07a69f3-1ba6-4520-bb5a-f513b573fb2e',
             'phone': '6eff29cc-d7b8-4517-8d4e-ff0ba486973a',
@@ -82,8 +76,8 @@ class LeadGenProcessor:
         }
         
         # Default to Banyan (will be overridden in upload method)
-        self.clickup_field_mapping = self.banyan_field_mapping
-        self.industry_uuids = self.banyan_industry_uuids
+        self.clickup_field_mapping = self.field_mapping
+        self.industry_uuids = self.industry_uuids
         
         # Default values for new leads
         self.default_values = {
@@ -597,19 +591,10 @@ class LeadGenProcessor:
 
     def upload_to_clickup(self, df: pd.DataFrame, list_id: str, batch_size: int = 5) -> List[str]:
         """Upload leads to ClickUp in batches"""
+        logger.info("Using Leadgen Sample CRM mappings")
         
-        # Configure field mappings based on target list
-        if list_id == "901316698136":  # LeadGen Sample CRM
-            self.clickup_field_mapping = self.sample_field_mapping
-            self.industry_uuids = self.sample_industry_uuids
-            logger.info("🧪 Using LeadGen Sample CRM field mappings")
-        else:  # Banyan CRM (Production)
-            self.clickup_field_mapping = self.banyan_field_mapping
-            self.industry_uuids = self.banyan_industry_uuids
-            logger.info("🚀 Using Banyan CRM field mappings")
-        
-        # TEST MODE: Only upload first 3 leads (the 3 Samanthas)
-        df = df.head(3)
+        # TEST MODE: Only upload first 3 leads
+       # df = df.head(3)
         
         logger.info(f"Uploading {len(df)} leads to ClickUp list {list_id}")
         
@@ -757,10 +742,8 @@ def main():
     
     print(f"\n💾 Processed data saved to: processed_leads.csv")
     
-    # UPLOAD TO CLICKUP - TEST MODE: 3 Samanthas to Banyan CRM  
-    list_id = os.getenv("CLICKUP_LIST_ID", "901315917676")  # Banyan CRM for testing
-    print(f"\n🧪 TEST MODE: Uploading 3 Samanthas to Banyan CRM: {list_id}")
-    task_ids = processor.upload_to_clickup(processed_leads, list_id)
+    # UPLOAD TO CLICKUP - TEST MODE: LeadGen Sample CRM
+    list_id = os.getenv("CLICKUP_LIST_ID")
     print(f"✅ Created {len(task_ids)} test tasks in ClickUp!")
 
 if __name__ == "__main__":

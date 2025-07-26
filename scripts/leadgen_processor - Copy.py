@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+#v11
 """
 LeadGen CSV to ClickUp Processor
 Cleans and standardizes lead data from multiple CSV sources for ClickUp import
@@ -60,13 +61,13 @@ class LeadGenProcessor:
         
         # Field mappings for different environments
         self.banyan_field_mapping = {
-            'company': 'bdc162a2-ea62-4074-b24c-e019e48cbbe5',  # Correct Banyan CRM Company field
-            'email': '5c20bfab-6fb9-452f-9196-14996b653515',     # Correct Banyan CRM Email field  
-            'phone': '68b89889-25a0-445c-a461-fd42c4bb7e64',     # Correct Banyan CRM Phone field
-            'estimated_value': '9e36e6a4-37b3-4251-9604-4cf714585f2d',  # Correct Banyan CRM Estimated Value
-            'last_contact': '920206a7-4511-4c2c-a4f1-e548a232cc9f',     # Correct Banyan CRM Last Contact
-            'opportunity_stage': '03722cf5-f4fe-4811-83a7-01b73b5d8628', # Correct Banyan CRM Opportunity Stage
-            'opportunity_type': 'a0c40b59-7195-4788-8545-08ed24ad60d7',  # Correct Banyan CRM Opportunity Type
+            'company': '0945b0ab-20e6-4f19-9667-a0d11ab32f0e',
+            'email': 'b07a69f3-1ba6-4520-bb5a-f513b573fb2e',
+            'phone': '6eff29cc-d7b8-4517-8d4e-ff0ba486973a',
+            'estimated_value': '25945e8b-0126-405d-95eb-d0d8ca09bbb3',
+            'last_contact': 'a5be2a78-bd38-4393-a193-41648af324b8',
+            'opportunity_stage': 'f803fb30-8709-4294-9421-22546ccd219f',
+            'opportunity_type': '46389a05-2371-434a-9dba-82e152e2e53b',
             'industry': 'a76893ac-c9d4-4886-a9e2-d850bbd7d151'  # Banyan CRM Industry field
         }
         
@@ -608,7 +609,7 @@ class LeadGenProcessor:
             self.industry_uuids = self.banyan_industry_uuids
             logger.info("🚀 Using Banyan CRM field mappings")
         
-        # TEST MODE: Only upload first 3 leads (the 3 Samanthas)
+        # TEST MODE: Only upload first 3 leads
         df = df.head(3)
         
         logger.info(f"Uploading {len(df)} leads to ClickUp list {list_id}")
@@ -757,9 +758,9 @@ def main():
     
     print(f"\n💾 Processed data saved to: processed_leads.csv")
     
-    # UPLOAD TO CLICKUP - TEST MODE: 3 Samanthas to Banyan CRM  
-    list_id = os.getenv("CLICKUP_LIST_ID", "901315917676")  # Banyan CRM for testing
-    print(f"\n🧪 TEST MODE: Uploading 3 Samanthas to Banyan CRM: {list_id}")
+    # UPLOAD TO CLICKUP - TEST MODE: LeadGen Sample CRM
+    list_id = "901315917676" # "901316698136"  # LeadGen Sample CRM for testing
+    print(f"\n🧪 TEST MODE: Uploading to LeadGen Sample CRM: {list_id}")
     task_ids = processor.upload_to_clickup(processed_leads, list_id)
     print(f"✅ Created {len(task_ids)} test tasks in ClickUp!")
 
