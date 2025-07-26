@@ -229,4 +229,22 @@ openpyxl>=3.1.0
 
 ---
 
+## Versions
+
+### leadgen_processor.py (v1)
+- Original processor with multi-environment support
+- Supports both Banyan CRM and LeadGen Sample CRM
+- More complex field mapping system
+
+### leadgen_processor_v2.py (v2) 
+- **Production-ready version specifically for LeadGen Sample CRM**
+- Simplified, single-environment codebase
+- Tested and validated with 9,600+ leads
+- **Automatic industry detection and classification**
+- Clean data pipeline: CSV → Clean → Categorize → Upload
+- **Currently recommended for production use**
+
+### Why v2?
+During development, we discovered environment-specific field mapping issues with the Banyan CRM. The LeadGen Sample CRM environment proved more reliable for the industry auto-detection features. v2 is streamlined for this working environment while v1 remains available for reference and future multi-environment development.
+
 **Built for Banyan Labs** | **Production-ready lead automation**
